@@ -61,3 +61,14 @@ Run all five on the same task and stage:
 ```
 modal run --detach modal/run_agent.py --model all --stage 1 --task "..."
 ```
+
+## Added 2026-10-22
+- **Repo layout:** one shared memory+runner repo; one target repo per real project;
+  keep `agent-sandbox-test` permanently as a smoke test; cookbook is reference only.
+  Verdicts live in the memory repo so agents cannot read other models' results.
+- **Logs:** raw run logs go to branch `agent-logs` of the target repo (token already
+  reaches it, keeps model-branch diffs clean). Summaries and verdicts go here.
+- **Runner hardening:** agent runs with stdin closed (`< /dev/null`) and a 30 min
+  `timeout`; output is tee'd and pushed even if the agent times out.
+- **Until the orchestrator exists:** start models as separate `modal run --detach`
+  commands (one per model), not `--model all`.

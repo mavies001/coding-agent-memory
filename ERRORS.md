@@ -12,3 +12,11 @@
 - Agent hangs waiting for approval: permissions not auto-allowed in headless mode
 - `Secret not found`: create `modal-proxy` first
 - Sandbox create fails inside the function: pass the app differently (see Modal sandbox docs)
+
+## Log, 2026-10-22 session
+| problem | cause | fix |
+|---|---|---|
+| First GLM run stalled after "agent start", no output | Most likely stdin held open and OpenCode waiting (not proven) | `< /dev/null` plus `timeout 1800`; later runs completed |
+| `modal run --detach` note: only the last triggered function stays alive | Modal behavior for local entrypoints | Run models as separate commands; build an orchestrator function |
+| `modal-proxy` secret created with an empty secret | Pressed Enter at the hidden prompt without pasting | Recreate with `--force`, paste the ws- secret |
+| "Timed out waiting for final app logs" at the end of a run | Client closes before logs arrive | Harmless; read logs with `modal app logs <app id>` or the agent-logs branch |

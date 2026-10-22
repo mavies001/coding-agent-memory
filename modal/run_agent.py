@@ -75,6 +75,7 @@ def build_script(repo, branch, model, model_id, base_url, task) -> str:
     cfg = json.dumps(opencode_config(base_url, model_id), indent=2)
     prompt = PREAMBLE + task
     commit_msg = f"agent({model}): {task[:60]}"
+    safe_branch = branch.replace("/", "_")
     pr = json.dumps(
         {
             "title": f"[{model}] {task[:60]}",
@@ -103,10 +104,30 @@ JSON
 export MODAL_PROXY_TOKEN="$MODAL_PROXY_TOKEN_ID.$MODAL_PROXY_TOKEN_SECRET"
 echo "== agent start: {model} ({model_id})"
 set +e
-env -u GITHUB_TOKEN opencode run -m modalep/{model_id} {shlex.quote(prompt)}
-AGENT_RC=$?
+timeout 1800 env -u GITHUB_TOKEN opencode run -m modalep/{model_id} {shlex.quote(prompt)} < /dev/null 2>&1 | tee /tmp/agent.log
+AGENT_RC=${{PIPESTATUS[0]}}
+echo "== agent exit code: $AGENT_RC (124 means timed out)"
+cd /work
+rm -rf logs
+git -c http.extraheader="$AUTH" clone --no-checkout https://github.com/{repo}.git logs
+cd logs
+if git -c http.extraheader="$AUTH" fetch origin agent-logs 2>/dev/null; then
+  git checkout -q -B agent-logs FETCH_HEAD
+else
+  git checkout -q --orphan agent-logs
+  git rm -rfq . 2>/dev/null
+fi
+mkdir -p runs
+{{ echo "model: {model} ({model_id})"; echo "branch: {branch}"; echo "agent exit code: $AGENT_RC"; echo "-----"; sed -E 's/(wk|ws)-[A-Za-z0-9._-]+/[REDACTED]/g' /tmp/agent.log | tail -n 400; }} > "runs/{safe_branch}.log"
+git add runs
+git commit -qm "log: {branch}"
+for i in 1 2 3; do
+  git -c http.extraheader="$AUTH" push -q origin agent-logs && break
+  git -c http.extraheader="$AUTH" pull -q --rebase origin agent-logs
+done
+echo "== log pushed to branch agent-logs: runs/{safe_branch}.log"
+cd /work/repo
 set -e
-echo "== agent exit code: $AGENT_RC"
 git add -A
 if git diff --cached --quiet; then echo "NO_CHANGES"; exit 0; fi
 git commit -m {shlex.quote(commit_msg)}
