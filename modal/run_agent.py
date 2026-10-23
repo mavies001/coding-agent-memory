@@ -56,8 +56,8 @@ def endpoint_url(slug: str) -> str:
     return f"https://{WORKSPACE}--ep-{slug}-server.us-west.modal.direct/v1"
 
 
-def opencode_config(base_url: str, model_id: str) -> dict:
-    return {
+def opencode_config(base_url: str, model_id: str, mcp: bool = False) -> dict:
+    cfg = {
         "$schema": "https://opencode.ai/config.json",
         "provider": {
             "modalep": {
@@ -69,10 +69,15 @@ def opencode_config(base_url: str, model_id: str) -> dict:
         },
         "permission": {"edit": "allow", "bash": "allow"},
     }
+    if mcp:
+        cfg["mcp"] = {
+            "context7": {"type": "remote", "url": "https://mcp.context7.com/mcp", "enabled": True}
+        }
+    return cfg
 
 
-def build_script(repo, branch, model, model_id, base_url, task) -> str:
-    cfg = json.dumps(opencode_config(base_url, model_id), indent=2)
+def build_script(repo, branch, model, model_id, base_url, task, mcp=False) -> str:
+    cfg = json.dumps(opencode_config(base_url, model_id, mcp), indent=2)
     prompt = PREAMBLE + task
     commit_msg = f"agent({model}): {task[:60]}"
     safe_branch = branch.replace("/", "_")
@@ -102,8 +107,9 @@ cat > ~/.config/opencode/opencode.json <<'JSON'
 {cfg}
 JSON
 export MODAL_PROXY_TOKEN="$MODAL_PROXY_TOKEN_ID.$MODAL_PROXY_TOKEN_SECRET"
-echo "== agent start: {model} ({model_id})"
+echo "== agent start: {model} ({model_id}) mcp={mcp}"
 set +e
+opencode mcp list 2>&1 | head -20
 timeout 1800 env -u GITHUB_TOKEN opencode run -m modalep/{model_id} {shlex.quote(prompt)} < /dev/null 2>&1 | tee /tmp/agent.log
 AGENT_RC=${{PIPESTATUS[0]}}
 echo "== agent exit code: $AGENT_RC (124 means timed out)"
@@ -145,10 +151,10 @@ echo "== done"
 
 
 @app.function(timeout=60 * 60 * 3)
-def run_task(model: str, repo: str, task: str, stage: str):
+def run_task(model: str, repo: str, task: str, stage: str, mcp: bool = False):
     slug, model_id = MODELS[model]
     branch = f"stage-{stage}/{model}-{int(time.time())}"
-    script = build_script(repo, branch, model, model_id, endpoint_url(slug), task)
+    script = build_script(repo, branch, model, model_id, endpoint_url(slug), task, mcp)
 
     sb_app = modal.App.lookup(APP_NAME + "-sandboxes", create_if_missing=True)
     sb = modal.Sandbox.create(
@@ -173,11 +179,12 @@ def main(
     task: str = "Append one line to README.md that says hello from the agent.",
     repo: str = "mavies001/agent-sandbox-test",
     stage: str = "test",
+    mcp: bool = False,
 ):
     names = CONTESTANTS if model == "all" else [model]
     for name in names:
         if name not in MODELS:
             raise SystemExit(f"unknown model {name}; choose from {list(MODELS)} or 'all'")
-        call = run_task.spawn(name, repo, task, stage)
+        call = run_task.spawn(name, repo, task, stage, mcp)
         print(f"started {name}: call {call.object_id}")
     print("Jobs are running in the cloud. Check the PRs on GitHub or the Modal logs.")

@@ -72,3 +72,8 @@ modal run --detach modal/run_agent.py --model all --stage 1 --task "..."
   `timeout`; output is tee'd and pushed even if the agent times out.
 - **Until the orchestrator exists:** start models as separate `modal run --detach`
   commands (one per model), not `--model all`.
+
+## MCP and skills (2026-10-23)
+- MCP is off by default; enable with `--mcp`. All five models must get the same MCP/skills for a fair comparison.
+- Config layout: older `mcp.<name>` form (opencode-ai npm package); newer docs show `mcp.servers`.
+- Context7 sends queries to a third-party server; avoid on sensitive tasks.

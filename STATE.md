@@ -37,3 +37,8 @@ the best, and the winner becomes the base for the next stage.
 2. Add the test sandbox (no GitHub token, no write access)
 3. Pick a real target repo, extend/make a fine-grained token for it
 4. Run stage 1, paste summaries to the judge, log the verdict in history/
+
+## Update 2026-10-23
+- Verified: `--mcp` flag adds Context7 (remote MCP). GLM called its tools headless, no auth, wrote NOTES.md (log stage-mcp_glm-1792740556).
+- Verified: a ~200 s job (two `sleep 100`) completes in the sandbox with exit code 0.
+- Still unverified: survival with Termux fully closed; MCP on the other four models; MCP with five parallel runs (rate limits).
