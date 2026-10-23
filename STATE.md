@@ -42,3 +42,4 @@ the best, and the winner becomes the base for the next stage.
 - Verified: `--mcp` flag adds Context7 (remote MCP). GLM called its tools headless, no auth, wrote NOTES.md (log stage-mcp_glm-1792740556).
 - Verified: a ~200 s job (two `sleep 100`) completes in the sandbox with exit code 0.
 - Still unverified: survival with Termux fully closed; MCP on the other four models; MCP with five parallel runs (rate limits).
+- Verified 2026-10-23: `--mcp` (Context7) works on all five models (glm, kimi, deepseek, inkling, muse): all exit 0, all called resolve-library-id and query-docs, all wrote NOTES.md. No rate limits seen. Task was trivial; says nothing about real-code quality.
