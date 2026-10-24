@@ -43,3 +43,9 @@
   (GitHub issues; unverified in 1.19.4). The ~59 s early end is still unexplained.
 - Fix being tested: GLM-only low effort + 200k output + env override + 45 min timeout.
 - Gap: a run with exit 0 and no output/changes looks like success; needs a guard.
+
+### GLM fix result (stage ui1d, 2026-10-24)
+GLM completed the ui1 prompt: index.html + NOTES.md (888 lines), PR #26, exit 0. Settings used:
+reasoningEffort low, limit.output 200000, OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=200000, agent
+timeout 2700. Several settings changed together; which one was decisive is unknown. GLM's claims
+(node --check, 8/8 done) are self-reported until the page is tested.
