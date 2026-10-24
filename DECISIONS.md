@@ -77,3 +77,20 @@ modal run --detach modal/run_agent.py --model all --stage 1 --task "..."
 - MCP is off by default; enable with `--mcp`. All five models must get the same MCP/skills for a fair comparison.
 - Config layout: older `mcp.<name>` form (opencode-ai npm package); newer docs show `mcp.servers`.
 - Context7 sends queries to a third-party server; avoid on sensitive tasks.
+
+## Added 2026-10-24
+- MCP: off by default; `--mcp` takes names (inspo, context7, thinking). Same MCP and skills
+  for all five models in a comparison. Skip GitHub MCP (needs a token the agent could use).
+  Inspo: remote, no auth, UI/frontend tasks only; briefs go to a third party.
+- Skills: global `~/.config/opencode/skills/<name>/SKILL.md` inside the sandbox (never in
+  target repo PRs). Skills are instructions; MCP is tools.
+- GLM-5.3 settings (GLM only, recorded because they differ from the others): reasoningEffort
+  low, limit.output 200000, OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=200000. Not 1M because
+  OpenCode reserves output size from the context window when deciding to compact.
+- Agent timeout 2700 s (45 min) for all models; it is the real brake on runaway cost.
+- Judge rubric in history/RUBRIC.md; verdicts live here so agents cannot read them.
+- Prompts: vague prompts mostly measure taste and make outputs converge; use tight prompts
+  (audience, constraints, definition of done) and a checklist the model must report on.
+- Probes that need the proxy token run inside Modal with the stored secret, never with tokens
+  typed or pasted in Termux or chat.
+- Qwen3.8 is the fallback fifth contestant if GLM cannot be made to work.

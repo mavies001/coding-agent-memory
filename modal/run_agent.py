@@ -91,6 +91,14 @@ MCP_SERVERS = {
 }
 
 
+MODEL_EXTRA = {
+    "zai-org/GLM-5.3": {
+        "limit": {"context": 1048576, "output": 200000},
+        "options": {"reasoningEffort": "low"},
+    },
+}
+
+
 def opencode_config(base_url: str, model_id: str, mcp: str = "") -> dict:
     cfg = {
         "$schema": "https://opencode.ai/config.json",
@@ -99,7 +107,7 @@ def opencode_config(base_url: str, model_id: str, mcp: str = "") -> dict:
                 "npm": "@ai-sdk/openai-compatible",
                 "name": "Modal endpoint",
                 "options": {"baseURL": base_url, "apiKey": "{env:MODAL_PROXY_TOKEN}"},
-                "models": {model_id: {"name": model_id}},
+                "models": {model_id: {"name": model_id, **MODEL_EXTRA.get(model_id, {})}},
             }
         },
         "permission": {"edit": "allow", "bash": "allow"},
@@ -112,6 +120,7 @@ def opencode_config(base_url: str, model_id: str, mcp: str = "") -> dict:
 def build_script(repo, branch, model, model_id, base_url, task, mcp="", skills=False) -> str:
     cfg = json.dumps(opencode_config(base_url, model_id, mcp), indent=2)
     skills_sh = skills_block() if skills else ""
+    token_env = "export OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=200000\n" if model_id in MODEL_EXTRA else ""
     prompt = PREAMBLE + task
     commit_msg = f"agent({model}): {task[:60]}"
     safe_branch = branch.replace("/", "_")
@@ -141,12 +150,13 @@ mkdir -p ~/.config/opencode
 {cfg}
 JSON
 export MODAL_PROXY_TOKEN="$MODAL_PROXY_TOKEN_ID.$MODAL_PROXY_TOKEN_SECRET"
-echo "== agent start: {model} ({model_id}) mcp={mcp} skills={skills}"
+{token_env}echo "== agent start: {model} ({model_id}) mcp={mcp} skills={skills}"
 set +e
 opencode mcp list 2>&1 | head -20
-timeout 1800 env -u GITHUB_TOKEN opencode run -m modalep/{model_id} {shlex.quote(prompt)} < /dev/null 2>&1 | tee /tmp/agent.log
+timeout 2700 env -u GITHUB_TOKEN opencode run -m modalep/{model_id} {shlex.quote(prompt)} < /dev/null 2>&1 | tee /tmp/agent.log
 AGENT_RC=${{PIPESTATUS[0]}}
 echo "== agent exit code: $AGENT_RC (124 means timed out)"
+{{ echo "--- opencode logs"; tail -n 200 ~/.local/share/opencode/log/*.log 2>/dev/null; }} >> /tmp/agent.log
 cd /work
 rm -rf logs
 git -c http.extraheader="$AUTH" clone --no-checkout https://github.com/{repo}.git logs
