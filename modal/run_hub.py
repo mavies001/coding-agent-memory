@@ -23,7 +23,7 @@ agent_image = (
 
 MODELS = {
     "glm": ("glm-5-3", "zai-org/GLM-5.3"),
-    "kimi": ("kimi", "moonshotai/Kimi-K3"),
+    "kimi": ("kimi-k3-1-pro", "moonshotai/Kimi-K3.1-Pro"),
     "deepseek": ("deepseek-v4-1-flash", "deepseek-ai/DeepSeek-V4.1-Flash"),
     "inkling": ("inkling-nvfp4", "thinkingmachines/Inkling-NVFP4"),
     "muse": ("muse-spark-open-816b-a42b", "meta-models/Muse-Spark-Open-816B-A42B"),
